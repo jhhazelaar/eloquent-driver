@@ -4,6 +4,7 @@ namespace Statamic\Eloquent\Forms;
 
 use Illuminate\Database\Eloquent\Model;
 use Statamic\Contracts\Forms\Form as Contract;
+use Statamic\Events\FormCreated;
 use Statamic\Events\FormDeleted;
 use Statamic\Events\FormSaved;
 use Statamic\Facades\Blink;
@@ -61,12 +62,18 @@ class Form extends FileEntry
         $model = $this->toModel();
         $model->save();
 
+        $isNew = $model->wasRecentlyCreated;
+
         $this->model($model->fresh());
 
         Blink::forget("eloquent-forms-{$this->handle()}");
         Blink::forget('eloquent-forms');
 
-        FormSaved::dispatch($this);
+        if ($isNew) {
+            FormCreated::dispatch($this);
+        } else {
+            FormSaved::dispatch($this);
+        }
     }
 
     public function delete()
